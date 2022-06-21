@@ -4,7 +4,7 @@ import keras
 
 from keras import layers
 
-from ..masks import *
+from ..utils.masks import *
 
 
 """
