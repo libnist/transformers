@@ -3,9 +3,6 @@ from keras import layers
 from .attention import FnetAttention
 from .feedforward import PFFN
 
-enc_access = ["VanillaEncoderLayer",
-              "FnetEncoderLayer"]
-
 # Vanilla EncoderLayer
 class VanillaEncoderLayer(layers.Layer):
   def __init__(self, *, d_model, num_heads,
@@ -26,7 +23,7 @@ class VanillaEncoderLayer(layers.Layer):
                      dense_dim=dense_dim,
                      rate=rate)
 
-  def call(self, inputs, training=True, padding_mask=None):
+  def call(self, inputs, training=False, padding_mask=None):
 
     outputs = self.mha(query=inputs, key=inputs, value=inputs,
                        attention_mask=padding_mask, training=training)
@@ -62,7 +59,7 @@ class FnetEncoderLayer(layers.Layer):
                      dense_dim=dense_dim,
                      rate=rate)
 
-  def call(self, inputs, training=True, **kwargs):
+  def call(self, inputs, training=False, **kwargs):
 
     outputs = self.fnet(inputs, training)
     outputs = self.pffn(outputs, training)
@@ -73,6 +70,61 @@ def get_config(self):
     config = {"d_model": self.d_model,
               "dense_dim": self.dense_dim,
               "with_dense": self.with_dense,
+              "rate": self.rate,
+              "name": self.name}
+    return config
+
+# Vanilla Decoder
+class VanillaDecoderLayer(layers.Layer):
+  def __init__(self, *, d_model, num_heads,
+              dense_dim=1024, rate=.1,
+              name="VanillaDecoder"):
+    super(VanillaDecoderLayer, self).__init__(name=name)
+
+    self.d_model = d_model
+    self.num_heads = num_heads
+    self.dense_dim = dense_dim
+    self.rate = rate
+    self.name = name
+
+    self.mha1 = layers.MultiHeadAttention(num_heads=num_heads,
+                                          key_dim=d_model,
+                                          dropout=rate)
+    self.mha2 = layers.MultiHeadAttention(num_heads=num_heads,
+                                          key_dim=d_model,
+                                          dropout=rate)
+    self.pffn = PFFN(d_model=d_model,
+                     dense_dim=dense_dim,
+                     rate=rate)
+
+    self.layernorm1 = layers.LayerNormalization()
+    self.layernorm2 = layers.LayerNormalization()
+
+  def call(self, inputs, enc_output, training=False,
+           padding_mask=None, look_ahead_mask=None):
+    
+    outputs_mha1 = self.mha1(query=inputs,
+                             key=inputs,
+                             value=inputs,
+                             attention_mask=look_ahead_mask,
+                             training=training)
+    outputs_mha1 = self.layernorm1(inputs + outputs_mha1)
+
+    outputs_mha2 = self.mha2(query=outputs_mha1,
+                             key=enc_output,
+                             value=enc_output,
+                             attention_mask=padding_mask,
+                             training=training)
+    outputs_mha2 = self.layernorm2(outputs_mha1 + outputs_mha2)
+
+    outputs = self.pffn(outputs_mha2, training)
+
+    return outputs
+
+def get_config(self):
+    config = {"d_model": self.d_model,
+              "num_heads": self.num_heads,
+              "dense_dim": self.dense_dim,
               "rate": self.rate,
               "name": self.name}
     return config
