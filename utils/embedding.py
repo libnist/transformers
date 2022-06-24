@@ -11,15 +11,15 @@ token, and type embedding. it returns the net sum of all the embeddings.
 
 class EmbeddingLayer(layers.Layer):
   def __init__(self, *, sequence_length, vocab_size,
-               type_size, d_model, rate=.1, layer_name="EmbeddingLayer"):
-    super(EmbeddingLayer, self).__init__(name=layer_name)
+               type_size, d_model, rate=.1, name="EmbeddingLayer",
+               **kwargs):
+    super(EmbeddingLayer, self).__init__(name=name, **kwargs)
 
     self.sequence_length = sequence_length
     self.vocab_size = vocab_size
     self.type_size = type_size
     self.d_model = d_model
     self.rate = rate
-    self.layer_name = layer_name
 
     # positional Embedding
     self.positional_embeddings = layers.Embedding(input_dim=sequence_length,
@@ -54,10 +54,10 @@ class EmbeddingLayer(layers.Layer):
     return outputs
 
   def get_config(self):
-    config = {"sequence_length": self.sequence_length,
-              "vocab_size": self.vocab_size,
-              "type_size": self.type_size,
-              "d_model": self.d_model,
-              "rate": self.rate,
-              "layer_name": self.layer_name}
+    config = super(EmbeddingLayer, self).get_config()
+    config.update({"sequence_length": self.sequence_length,
+                   "vocab_size": self.vocab_size,
+                   "type_size": self.type_size,
+                   "d_model": self.d_model,
+                   "rate": self.rate})
     return config

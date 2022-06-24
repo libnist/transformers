@@ -5,13 +5,12 @@ from keras import layers
 # This feedforwar nn is the vanilla neural network explained
 # in the Attention is all you need paper
 class PFFN(layers.Layer):
-  def __init__(self, *, d_model, dense_dim, rate=.1, name="PFFN"):
-    super(PFFN, self).__init__(name=name)
+  def __init__(self, *, d_model, dense_dim, rate=.1, name="PFFN", **kwargs):
+    super(PFFN, self).__init__(name=name, **kwargs)
 
     self.d_model = d_model
     self.dense_dim = dense_dim
     self.rate = rate
-    self.name = name
 
     self.dense_1 = layers.Dense(dense_dim, activation="relu")
     self.dense_2 = layers.Dense(d_model)
@@ -28,8 +27,8 @@ class PFFN(layers.Layer):
     return outputs
 
   def get_config(self):
-    config = {"d_model": self.d_model,
-              "dense_dim": self.dense_dim,
-              "rate": self.rate,
-              "name": self.name}
+    config = super(PFFN, self).get_config()
+    config.update({"d_model": self.d_model,
+                   "dense_dim": self.dense_dim,
+                   "rate": self.rate})
     return config
