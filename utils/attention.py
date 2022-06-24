@@ -2,6 +2,8 @@
 import tensorflow as tf
 from keras import layers
 
+__all__ = ["FnetAttention"]
+
 # The attention below was introduced in
 # F-net article
 class FnetAttention(layers.Layer):

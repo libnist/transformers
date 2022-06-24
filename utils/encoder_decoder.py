@@ -3,7 +3,9 @@ from keras import layers
 from .attention import FnetAttention
 from .feedforward import PFFN
 
-# __all__
+__all__ = ["VanillaEncoderLayer",
+           "FnetEncoderLayer",
+           "VanillaDecoderLayer"]
 
 # Vanilla EncoderLayer
 class VanillaEncoderLayer(layers.Layer):

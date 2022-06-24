@@ -1,6 +1,8 @@
 # Import libraries
 from keras import layers
 
+__all__ = ["PFFN"]
+
 # A simple pointwise feed forwar neural network
 # This feedforwar nn is the vanilla neural network explained
 # in the Attention is all you need paper

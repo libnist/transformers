@@ -3,6 +3,8 @@ import tensorflow as tf
 
 from keras import layers
 
+__all__ = ["EmbeddingLayer"]
+
 """
 This Module contains an embedding layer that is the same as 
 the one used in bert. it has three types of embeddings, positional,
