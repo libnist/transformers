@@ -77,6 +77,10 @@ class Master(layers.Layer):
         This functoin is designed to prepare the inputs for the
         transformer, in case of training or interpreting.
         In case of overriding consider both cases.
+        In the vanilla case of this functoin we expect inputs to have
+        types that defines separate sentences in a document.
+        If you don't want this you can just override this function
+        and apply it to you call() or your own train_step().
         """
         raw_inputs, raw_targets = inputs
         if not call:
@@ -85,7 +89,7 @@ class Master(layers.Layer):
             real_targets, real_targets_types = raw_targets[:, 1:], raw_targets[:, 1:]
             outputs = {"inputs": (inputs, inputs_types), 
                        "inp_targets": (inp_targets, inp_target_types),
-                       "real_targets": (real_targets, real_targets_types)}
+                       "real_targets": real_targets}
 
         else:
             outputs = {"inputs": raw_inputs,
@@ -107,7 +111,7 @@ class Master(layers.Layer):
         look_ahead_mask = create_look_ahead_mask(tf.shape(tar)[1])
         dec_target_padding_mask = create_padding_mask(tar)
         dec_target_padding_mask = tf.transpose(dec_target_padding_mask,
-                                            perm=[0, 2, 1])
+                                               perm=[0, 2, 1])
         look_ahead_mask = tf.minimum(dec_target_padding_mask, look_ahead_mask)
         return padding_mask, look_ahead_mask
 
