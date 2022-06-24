@@ -44,6 +44,8 @@ train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
 class Master(layers.Layer):
 
     def train_setp(self, data):
+
+        data = self.unpack_inputs(data=data, call=False)
         
         # Performing the gradient
         with tf.GradientTape() as tape:
@@ -70,7 +72,7 @@ class Master(layers.Layer):
     # The assumptoin in here will be that our input is in the shape:
     # ((inputs, inputs_types),
     #  (targets, target_types))
-    def unpack_inputs(self, inputs, call):
+    def unpack_inputs(self, inputs, call=True):
         """
         This functoin is designed to prepare the inputs for the
         transformer, in case of training or interpreting.
