@@ -50,7 +50,7 @@ class FnetEncoderLayer(layers.Layer):
     super(FnetEncoderLayer, self).__init__(name=name, **kwargs)
 
     self.d_model = d_model
-    self.dense_dim = dense_dim,
+    self.dense_dim = dense_dim
     self.with_dense = with_dense
     self.rate = rate
 
@@ -127,6 +127,5 @@ class VanillaDecoderLayer(layers.Layer):
       config.update({"d_model": self.d_model,
                      "num_heads": self.num_heads,
                      "dense_dim": self.dense_dim,
-                     "rate": self.rate,
-                     "name": self.name})
+                     "rate": self.rate})
       return config
