@@ -2,8 +2,6 @@
 import tensorflow as tf
 import keras
 
-from keras import layers
-
 from ..utils.masks import *
 
 
@@ -41,7 +39,7 @@ def accuracy_function(real, pred):
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
 
-class Master(layers.Layer):
+class Master(keras.Model):
 
     def train_setp(self, data):
 
