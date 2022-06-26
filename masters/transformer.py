@@ -41,35 +41,26 @@ train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
 
 class Master(keras.Model):
 
-    def train_setp(self, data):
-
-        data = self.unpack_inputs(data=data, call=False)
+    def train_step(self, data):
         
-        # Performing the gradient
+        data = self.unpack_inputs(data, call=False)
+
         with tf.GradientTape() as tape:
-            pred = self((data["inputs"], data["inp_targets"]), training=True)
-            loss = loss_function(data["real_targets"], pred)
+            predictions = self((data["inputs"], data["inp_targets"]), training=True)
+            loss = loss_function(data["real_targets"], predictions)
             # loss += self.losses
 
-        # Calculating the gradient
         trainable_vars = self.trainable_variables
-        grad = tape.gradient(loss, trainable_vars)
+        gradients = tape.gradient(loss, trainable_vars)
 
-        # Applying the gradient on weights
-        self.optimizer.apply_gradients(zip(grad, trainable_vars))
-
-        # Updating our metrics
+        self.optimizer.apply_gradients(zip(gradients, trainable_vars))
+        
         train_loss(loss)
-        train_accuracy(accuracy_function(data["real_targets"], pred))
+        train_accuracy(accuracy_function(data["real_targets"], predictions))
 
-        # Returning the metrics/ reporting them
         return {"Loss": train_loss.result(),
                 "Accuracy": train_accuracy.result()}
 
-
-    # The assumptoin in here will be that our input is in the shape:
-    # ((inputs, inputs_types),
-    #  (targets, target_types))
     def unpack_inputs(self, inputs, call=True):
         """
         This functoin is designed to prepare the inputs for the
@@ -80,18 +71,15 @@ class Master(keras.Model):
         If you don't want this you can just override this function
         and apply it to you call() or your own train_step().
         """
-        raw_inputs, raw_targets = inputs
+        tar, tar_types = inputs[1]
         if not call:
-            inputs, inputs_types = raw_inputs
-            inp_targets, inp_target_types = raw_targets[:, :-1], raw_targets[:, :-1]
-            real_targets, real_targets_types = raw_targets[:, 1:], raw_targets[:, 1:]
-            outputs = {"inputs": (inputs, inputs_types), 
-                       "inp_targets": (inp_targets, inp_target_types),
+            inp_targets = tar[:, :-1], tar_types[:, :-1]
+            real_targets = tar[:, 1:]
+            outputs = {"inputs": inputs[0], 
+                       "inp_targets": inp_targets,
                        "real_targets": real_targets}
-
         else:
-            outputs = {"inputs": raw_inputs,
-                       "targets": raw_targets}
+            outputs = inputs
         return outputs
 
     

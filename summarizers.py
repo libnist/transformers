@@ -1,11 +1,8 @@
 # libraries
-from .masters import Master
-import tensorflow as tf
-import keras
-
 from keras import layers
 
 from .masters.transformer import Master
+
 
 # Vanilla transformer arcitecture for summarizatoin
 class VanillaTransformer(Master):
@@ -19,9 +16,8 @@ class VanillaTransformer(Master):
         self.final_layer = layers.Dense(output_size)
 
     def call(self, inputs, training):
-        inputs = self.unpack_inputs(inputs, call=True)
-        inputs = inputs["inputs"], inputs["targets"]
-        inp, tar = inputs
+
+        inp, tar = self.unpack_inputs(inputs, call=True)
 
         padding_mask, look_ahead_mask = self.create_masks(inp[0], tar[0])
 
