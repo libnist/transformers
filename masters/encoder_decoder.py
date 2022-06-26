@@ -7,50 +7,52 @@ __all__ = ["Encoder", "Decoder"]
 # The class below is a master that both Encoder
 # and Decoder will get build upon it.
 class Master(layers.Layer):
-    def __init__(self, *, layer, layer_params,
-                 number_of_layers, embedding_layer,
-                 name="Master"):
-        super(Master, self).__init__(name=name)
+    def __init__(self, *, layer, number_of_layers,
+                 embedding_layer, name="Master"):
+        super().__init__(name=name)
 
         self.layer = layer
-        self.layer_params = layer_params
         self.number_of_layers = number_of_layers
         self.embedding_layer = embedding_layer
-        self.name = name
 
-        self.layers = [layer(**layer_params, name=f"{name}_{i}")
-                       for i in range(number_of_layers)]
+        layer_config = layer.get_config()
+        layer_name = layer_config["name"]
+
+        self.layers = []
+
+        for i in range(number_of_layers):
+            layer_config.update(name=f"{layer_name}_{i}")
+            self.layers.append(layer.from_config(layer_config))
 
     def get_config(self):
-        config = {"layer": self.layer,
-                  "layer_params": self.layer_params,
-                  "number_of_layers": self.number_of_layers,
-                  "embedding_layer": self.embedding_layer,
-                  "name": self.name}
+        config = super().get_config()
+        config.update({"layer": self.layer,
+                       "number_of_layers": self.number_of_layers,
+                       "embedding_layer": self.embedding_layer})
         return config
 
 # Class below is a Master encoder, it takes an encoder layer,
 # an embedding layer and the parameters to perform making an end-to-end
 # encoder.
 
-class Encoder(layers.Layer):
+class Encoder(Master):
 
     def call(self, inputs, training=False, padding_mask=None):
         # Expected input is just the expected input for embedding
         # inputs shape: (batch_size, seq_len)
-        output = self.embedding_layer(inputs, training, padding_mask) # (batch_size, seq_len, d_model=d_embedding)
+        output = self.embedding_layer(inputs, training) # (batch_size, seq_len, d_model=d_embedding)
 
         for encoder in self.layers:
             output = encoder(output, training, padding_mask) # (batch_size, seq_len, d_model=d_encoder_layer)
 
         return output
 
-class Decoder(layers.Layer):
+class Decoder(Master):
 
     def call(self, inputs, encoder_outputs, training=False,
              padding_mask=None, look_ahead_mask=None):
         # inputs shape: (batch_size, seq_len)
-        output = self.embedding_layer(inputs, training, padding_mask) # (batch_size, seq_len, d_model=d_embedding)
+        output = self.embedding_layer(inputs, training) # (batch_size, seq_len, d_model=d_embedding)
 
         for decoder in self.layers:
             output = decoder(output, encoder_outputs,
