@@ -1,4 +1,4 @@
-# import libraries
+# Import libraries
 from keras import layers
 
 # Define what can be imported
@@ -6,6 +6,8 @@ __all__ = ["Encoder", "Decoder"]
 
 # The class below is a master that both Encoder
 # and Decoder will get build upon it.
+
+
 class Master(layers.Layer):
     def __init__(self, *, layer, number_of_layers,
                  embedding_layer, name="Master"):
@@ -35,27 +37,35 @@ class Master(layers.Layer):
 # an embedding layer and the parameters to perform making an end-to-end
 # encoder.
 
+
 class Encoder(Master):
 
     def call(self, inputs, training=False, padding_mask=None):
         # Expected input is just the expected input for embedding
         # inputs shape: (batch_size, seq_len)
-        output = self.embedding_layer(inputs, training) # (batch_size, seq_len, d_model=d_embedding)
+        # (batch_size, seq_len, d_model=d_embedding)
+        output = self.embedding_layer(inputs=inputs, training=training)
 
         for encoder in self.layers:
-            output = encoder(output, training, padding_mask) # (batch_size, seq_len, d_model=d_encoder_layer)
+            # (batch_size, seq_len, d_model=d_encoder_layer)
+            output = encoder(inputs=output,
+                             training=training,
+                             padding_mask=padding_mask)
 
         return output
 
+
 class Decoder(Master):
 
-    def call(self, inputs, encoder_outputs, training=False,
+    def call(self, inputs, enc_outputs, training=False,
              padding_mask=None, look_ahead_mask=None):
         # inputs shape: (batch_size, seq_len)
-        output = self.embedding_layer(inputs, training) # (batch_size, seq_len, d_model=d_embedding)
+        # (batch_size, seq_len, d_model=d_embedding)
+        output = self.embedding_layer(inputs, training)
 
         for decoder in self.layers:
-            output = decoder(output, encoder_outputs,
-                             training, padding_mask,
-                             look_ahead_mask) # (batch_size, seq_len, d_model=d_decoder_layer)
+            # (batch_size, seq_len, d_model=d_decoder_layer)
+            output = decoder(inputs=output, enc_outputs=enc_outputs,
+                             training=training, padding_mask=padding_mask,
+                             look_ahead_mask=look_ahead_mask)
         return output
