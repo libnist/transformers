@@ -12,34 +12,6 @@ from ..utils.masks import *
 # could be overrode in neccesary cases for further custumizatoins.
 # It also contains the masking tools in it so we don't have to import it for many times.
 
-loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True,
-                                                            reduction='none')
-
-
-def loss_function(real, pred):
-    mask = tf.math.logical_not(tf.math.equal(real, 0))
-    loss_ = loss_object(real, pred)
-
-    mask = tf.cast(mask, dtype=loss_.dtype)
-    loss_ *= mask
-
-    return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
-
-
-def accuracy_function(real, pred):
-    accuracies = tf.equal(real, tf.argmax(pred, axis=2))
-
-    mask = tf.math.logical_not(tf.math.equal(real, 0))
-    accuracies = tf.math.logical_and(mask, accuracies)
-
-    accuracies = tf.cast(accuracies, dtype=tf.float32)
-    mask = tf.cast(mask, dtype=tf.float32)
-    return tf.reduce_sum(accuracies)/tf.reduce_sum(mask)
-
-
-train_loss = tf.keras.metrics.Mean(name='train_loss')
-train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
-
 
 class Master(keras.Model):
 
@@ -50,8 +22,8 @@ class Master(keras.Model):
         with tf.GradientTape() as tape:
             predictions = self((data["inputs"],
                                 data["inp_targets"]),
-                                training=True)
-            loss = loss_function(data["real_targets"], predictions)
+                               training=True)
+            loss = self.compiled_loss(data["real_targets"], predictions)
             # loss += self.losses
 
         trainable_vars = self.trainable_variables
@@ -59,11 +31,9 @@ class Master(keras.Model):
 
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
 
-        train_loss(loss)
-        train_accuracy(accuracy_function(data["real_targets"], predictions))
+        self.compiled_metrics.update_state(data["real_targets"], predictions)
 
-        return {"Loss": train_loss.result(),
-                "Accuracy": train_accuracy.result()}
+        return {m.name: m.result() for m in self.metrics}
 
     def unpack_inputs(self, inputs, call=True):
         """
@@ -103,7 +73,3 @@ class Master(keras.Model):
                                                perm=[0, 2, 1])
         look_ahead_mask = tf.minimum(dec_target_padding_mask, look_ahead_mask)
         return padding_mask, look_ahead_mask
-
-    @property
-    def metrics(self):
-        return [train_loss, train_accuracy]
