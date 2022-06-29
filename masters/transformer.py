@@ -35,6 +35,20 @@ class Master(keras.Model):
 
         return {m.name: m.result() for m in self.metrics}
 
+    def test_step(self, inputs):
+
+        data = self.unpack_inputs(inputs=inputs, call=False)
+
+        # Compute predictions
+        y_pred = self((data["inputs"], data["inp_targets"]), training=False)
+
+        # Updates the metrics tracking the loss
+        self.compiled_loss(data["real_targets"], y_pred)
+        # Update the metrics.
+        self.compiled_metrics.update_state(data["real_targets"], y_pred)
+        
+        return {m.name: m.result() for m in self.metrics}
+
     def unpack_inputs(self, inputs, call=True):
         """
         This functoin is designed to prepare the inputs for the
