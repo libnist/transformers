@@ -15,6 +15,11 @@ from ..utils.masks import *
 
 class Master(keras.Model):
 
+    def __init__(self, ckpt_path):
+        super().__init__()
+
+        self.ckpt_path = ckpt_path
+
     def train_step(self, inputs):
 
         data = self.unpack_inputs(inputs=inputs, call=False)
@@ -46,7 +51,7 @@ class Master(keras.Model):
         self.compiled_loss(data["real_targets"], y_pred)
         # Update the metrics.
         self.compiled_metrics.update_state(data["real_targets"], y_pred)
-        
+
         return {m.name: m.result() for m in self.metrics}
 
     def unpack_inputs(self, inputs, call=True):
@@ -87,3 +92,29 @@ class Master(keras.Model):
                                                perm=[0, 2, 1])
         look_ahead_mask = tf.minimum(dec_target_padding_mask, look_ahead_mask)
         return padding_mask, look_ahead_mask
+
+    def checkpoint(self, ckpt_path):
+
+        if not self.optimizer:
+            raise ValueError("Optimizer is not compiled.")
+
+        self.ckpt = tf.train.Checkpoint(transformer=self,
+                                        optimizer=self.optimizer)
+
+        self.ckpt_manager = tf.train.CheckpointManager(self.ckpt,
+                                                       ckpt_path,
+                                                       max_to_keep=5)
+
+        if self.ckpt_manager.latest_checkpoint:
+            self.ckpt.restore(self.ckpt_manager.latest_checkpoint)
+            print("Latest checkpoint restored!")
+
+    def save(self):
+        if not self.ckpt_manager:
+            raise ValueError("ckpt_manager is not defined")
+        self.ckpt_manager.save()
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({"ckpt_path": self.ckpt_path})
+        return config
