@@ -7,9 +7,9 @@ from .masters.transformer import Master
 # Vanilla transformer arcitecture for summarizatoin
 class VanillaTransformer(Master):
 
-    def __init__(self, *, encoder, decoder, output_size, ckpt_path):
-        super().__init__(ckpt_path=ckpt_path)
-
+    def __init__(self, *, encoder, decoder, output_size):
+        super().__init__()
+        
         self.encoder = encoder
         self.decoder = decoder
 

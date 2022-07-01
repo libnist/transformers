@@ -15,11 +15,6 @@ from ..utils.masks import *
 
 class Master(keras.Model):
 
-    def __init__(self, ckpt_path):
-        super().__init__()
-
-        self.ckpt_path = ckpt_path
-
     def train_step(self, inputs):
 
         data = self.unpack_inputs(inputs=inputs, call=False)
@@ -109,7 +104,7 @@ class Master(keras.Model):
             self.ckpt.restore(self.ckpt_manager.latest_checkpoint)
             print("Latest checkpoint restored!")
 
-    def save(self):
+    def save(self, epoch=None):
         if not self.ckpt_manager:
             raise ValueError("ckpt_manager is not defined")
         self.ckpt_manager.save()
