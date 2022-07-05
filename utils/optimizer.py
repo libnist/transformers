@@ -3,7 +3,15 @@ import tensorflow as tf
 
 
 class AIAYNSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=4000):
+    """
+    Used to create the learning rates based on the proposed method in the
+    Attention is all you need paper. you only need to pass dimention of your
+    model as `d_model`.
+    """
+
+    def __init__(
+        self, d_model: int, warmup_steps: int = 4000
+    ) -> tf.keras.optimizers.schedules.LearningRateSchedule:
         super(AIAYNSchedule, self).__init__()
 
         self.d_model_to_serialize = d_model
@@ -24,7 +32,12 @@ class AIAYNSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         return config
 
 
-def aiayn_adam(learning_rate: AIAYNSchedule):
+def aiayn_adam(learning_rate: AIAYNSchedule) -> tf.keras.optimizers.Adam:
+    """
+    This function accepts a learning rate schedule that is based on 
+    Attention is all you need paper, and creates the Adam optimizer that is
+    used in the mentioned paper.
+    """
     return tf.keras.optimizers.Adam(
         learning_rate,
         beta_1=0.9,

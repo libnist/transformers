@@ -1,15 +1,21 @@
 # Import libraries
 from keras import layers
 
+# __all__ defines the thing that can be accessed from outside
 __all__ = ["PFFN"]
-
-# A simple pointwise feed forwar neural network
-# This feedforwar nn is the vanilla neural network explained
-# in the Attention is all you need paper
 
 
 class PFFN(layers.Layer):
-    def __init__(self, *, d_model, dense_dim, rate=.1, name="PFFN", **kwargs):
+    """
+    PFFN is a feed forward neural network with one dense layer in `dense_dim`
+    dimensions, and another with `d_model` dimensions. `rate` is used for the
+    dropout layer after the second Dense layer.
+    """
+
+    def __init__(
+        self, *, d_model: int, dense_dim: int,
+        rate: float = .1, name: str = "PFFN", **kwargs
+    ) -> layers.Layer:
         super(PFFN, self).__init__(name=name, **kwargs)
 
         self.d_model = d_model
@@ -21,8 +27,11 @@ class PFFN(layers.Layer):
         self.dropout = layers.Dropout(rate=rate)
         self.layernorm = layers.LayerNormalization()
 
-    def call(self, inputs, training=True):
-
+    def call(self, inputs, training: bool = True):
+        """
+        inputs have to be already embedded and in shape:
+        (batch_size, seq_len, d_model)
+        """
         outputs = self.dense_1(inputs)  # (batch_size, seq_len, dense_dim)
         outputs = self.dense_2(outputs)  # (batch_size, seq_len, d_model)
         outputs = self.dropout(outputs, training=training)

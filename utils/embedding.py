@@ -1,8 +1,8 @@
-# libraries
+# Import libraries
 import tensorflow as tf
-
 from keras import layers
 
+# __all__ defines the things that can be accessed from outside
 __all__ = ["EmbeddingLayer"]
 
 
@@ -12,8 +12,20 @@ __all__ = ["EmbeddingLayer"]
 
 
 class EmbeddingLayer(layers.Layer):
-    def __init__(self, *, sequence_length, vocab_size, type_size,
-                 d_model, rate=.1, name="EmbeddingLayer", **kwargs):
+    """
+    This embedding layer is designed to use token embeddings,
+    positional embeddings, and type embeddings. `d_model` defines the output
+    dimention of the embedding layer. there is also a `rate` parameter in order
+    to use a dropout layer just after when embedded outputs are achived.
+    sequence_length: used to delimite positional embedding.
+    vocab_size: your vocabulary size or number of tokens.
+    type_size: used to delimite type embedding (for sentences).
+    """
+
+    def __init__(
+        self, *, sequence_length: int, vocab_size: int, type_size: int,
+        d_model: int, rate: float = .1, name: str = "EmbeddingLayer", **kwargs
+    ) -> layers.Layer:
         super(EmbeddingLayer, self).__init__(name=name, **kwargs)
 
         self.sequence_length = sequence_length
@@ -46,15 +58,20 @@ class EmbeddingLayer(layers.Layer):
             name="EmbedingDropout"
         )
 
-    def call(self, inputs, training=True):
-
+    def call(self, inputs, training: bool = True):
+        """
+        inputs are in shape (batch_size, seq_len)
+        the output will be in shape (batch_size, seq_len, embedding_dim=d_model)
+        """
         tokens, types = inputs
 
         length = tf.shape(tokens)[-1]
 
         positions = tf.range(start=0, limit=length, delta=1)
 
-        outputs = self.positional_embeddings(positions) # (batch_size, seq_len, d_model)
+        outputs = self.positional_embeddings(
+            positions
+        )  # (batch_size, seq_len, d_model)
         outputs += self.token_embeddings(tokens)
         outputs += self.type_embeddings(types)
 

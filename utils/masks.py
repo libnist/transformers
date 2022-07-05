@@ -7,6 +7,10 @@ import tensorflow_probability as tfp
 
 
 def create_padding_mask(seq):
+    """
+    seq is a sequence of tokens and the output will be the masks to prevent
+    the effect of UNK tokens. This mask is to be used in MultiHeadAttention.
+    """
     seq = tf.cast(tf.math.not_equal(seq, 0), tf.float32)
 
     # add extra dimensions to add the padding
@@ -18,6 +22,10 @@ def create_padding_mask(seq):
 
 
 def create_look_ahead_mask(size):
+    """
+    This function creates a mask in order to teach a model that only uses the
+    past tokens in the decoder of the transformer.
+    """
     n = (size * (size+1) // 2)
     mask = tfp.math.fill_triangular(
         tf.ones((n,), dtype=tf.float32), upper=False)
