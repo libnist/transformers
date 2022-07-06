@@ -2,15 +2,26 @@
 import tensorflow as tf
 from keras import layers
 
+# __all__ defines what can be accessed from outside
 __all__ = ["FnetAttention"]
-
-# The attention below was introduced in
-# F-net article
 
 
 class FnetAttention(layers.Layer):
-    def __init__(self, *, with_dense=False, d_model=512,
-                 rate=.1, name="FnetAttention", **kwargs):
+    """
+    This is the f-net self-attention mechanism introduced in a article by the 
+    same name. This intra attention mechanism uses a fourier transform and
+    avoids any dot products, as a result it's faster than MultiHeadAttention.
+    You can decide whether you wan't a Dense layer after fourier transform by
+    the `with_dense` parameter, if so the `rate` will be counted as the dropout
+    rate contigous to the Dense, and `d_model` will be the output dim of that
+    Dense layer.
+    rate: [0, 1]
+    """
+
+    def __init__(
+        self, *, with_dense: bool = False, d_model: int = 512,
+        rate: float = .1, name: str = "FnetAttention", **kwargs
+    ) -> layers.Layer:
         super(FnetAttention, self).__init__(name=name, **kwargs)
 
         self.with_dense = with_dense
@@ -23,7 +34,11 @@ class FnetAttention(layers.Layer):
 
         self.layernorm = layers.LayerNormalization()
 
-    def call(self, inputs, training=True):
+    def call(self, inputs, training: bool = True):
+        """
+        inputs: an already embedded tensor of inputs in the sahpe:
+        (batch_size, seq_len, embedding_dim)
+        """
         outputs = tf.cast(inputs, dtype=tf.complex64)
         outputs = tf.math.real(tf.signal.fft2d(outputs))
 
