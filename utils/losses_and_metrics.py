@@ -26,7 +26,8 @@ class SCCELoss(keras.losses.Loss):
         mask = tf.cast(mask, dtype=loss_.dtype)
         loss_ *= mask
 
-        return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
+        loss = tf.reduce_sum(loss_)/tf.reduce_sum(mask)
+        return loss
 
 
 class Accuracy(keras.metrics.Metric):

@@ -23,8 +23,9 @@ class Master(keras.Model):
             predictions = self((data["inputs"],
                                 data["inp_targets"]),
                                training=True)
-            loss = self.compiled_loss(data["real_targets"], predictions)
-            # loss += self.losses
+            loss = self.compiled_loss(y_true=data["real_targets"],
+                                      y_pred=predictions,
+                                      regularization_losses=self.losses)
 
         trainable_vars = self.trainable_variables
         gradients = tape.gradient(loss, trainable_vars)
@@ -43,7 +44,9 @@ class Master(keras.Model):
         y_pred = self((data["inputs"], data["inp_targets"]), training=False)
 
         # Updates the metrics tracking the loss
-        self.compiled_loss(data["real_targets"], y_pred)
+        self.compiled_loss(data["real_targets"],
+                           y_pred,
+                           regularization_losses=self.losses)
         # Update the metrics.
         self.compiled_metrics.update_state(data["real_targets"], y_pred)
 
