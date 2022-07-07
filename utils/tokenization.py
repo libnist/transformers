@@ -3,8 +3,11 @@ import tensorflow as tf
 import tensorflow_text as text
 import pathlib
 import re
-from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as bert_vocab
 
+from tensorflow_text.tools.wordpiece_vocab import \
+    bert_vocab_from_dataset as bert_vocab
+
+# __all__ defines what can be accessed from outside
 __all__ = ["make_token_from_dataset",
            "tokenizers_from_vocab_path"]
 
@@ -33,8 +36,13 @@ def read_vocab(path):
     return vocab
 
 
-def make_token_from_dataset(vocab_size, data, file_path):
-
+def make_token_from_dataset(vocab_size: int,
+                            data: tf.data.Dataset,
+                            file_path: str):
+    """
+    Given a tf.dataset creates a vocabulary with vocab_size in file_path.
+    also return the vocabulary.
+    """
     preprocessed_data = data.map(lambda x: preprocess(x))
     bert_tokenizer_params = dict(lower_case=True)
 
@@ -199,7 +207,12 @@ class CustomTokenizer(tf.Module):
         return tf.constant(self._reserved_tokens)
 
 
-def tokenizers_from_vocab_path(doc_vocab_path, sum_vocab_path):
+def tokenizers_from_vocab_path(doc_vocab_path: str, sum_vocab_path: str):
+    """
+    Given document vocabulary and summary vocabulary path creates tokenizers
+    for documents and summaries in a single model and returns it. you can save
+    this model for future use.
+    """
     tokenizers = tf.Module()
     tokenizers.doc = CustomTokenizer(reserved_tokens, doc_vocab_path)
     tokenizers.sum = CustomTokenizer(reserved_tokens, sum_vocab_path)
