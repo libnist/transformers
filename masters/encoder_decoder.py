@@ -1,16 +1,20 @@
 # Import libraries
 from keras import layers
 
-# Define what can be imported
+# __all__ defines what can be imported
 __all__ = ["Encoder", "Decoder"]
-
-# The class below is a master that both Encoder
-# and Decoder will get build upon it.
 
 
 class Master(layers.Layer):
-    def __init__(self, *, layer, number_of_layers,
-                 embedding_layer, name="Master"):
+    """
+    High level encoder and decoder layers inherit this class and just implement
+    their own `call()` method.
+    """
+
+    def __init__(
+        self, *, layer: layers.Layer, number_of_layers: int,
+        embedding_layer: layers.Layer, name: str = "Master"
+    ) -> layers.Layer:
         super().__init__(name=name)
 
         self.layer = layer
@@ -39,8 +43,13 @@ class Master(layers.Layer):
 
 
 class Encoder(Master):
-
-    def call(self, inputs, training=False, padding_mask=None):
+    """
+    A high level Encoder that given an encoder layer and its embedding layer
+    first embeds the inputs and than passes the embedded tokens through
+    `number_of_layers` encoder layers. the output of the last encoder layer
+    will be returned as the output.
+    """
+    def call(self, inputs, training: bool = False, padding_mask=None):
         # Expected input is just the expected input for embedding
         # inputs shape: (batch_size, seq_len)
         # (batch_size, seq_len, d_model=d_embedding)
@@ -56,8 +65,13 @@ class Encoder(Master):
 
 
 class Decoder(Master):
-
-    def call(self, inputs, enc_outputs, training=False,
+    """
+    A high level Decoder that given a decoder layer and its embedding layer
+    first embeds the inputs and than passes the embedded tokens through
+    `number_of_layers` encoder layers. the output of the last decoder layer
+    will be returned as the output.
+    """
+    def call(self, inputs, enc_outputs, training: bool = False,
              padding_mask=None, look_ahead_mask=None):
         # inputs shape: (batch_size, seq_len)
         # (batch_size, seq_len, d_model=d_embedding)

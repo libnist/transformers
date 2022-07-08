@@ -128,7 +128,7 @@ class VanillaDecoderLayer(layers.Layer):
     def __init__(
         self, *, d_model: int, num_heads: int, dense_dim: int = 1024,
         rate: int = .1, name: str = "VanillaDecoder", **kwargs
-    ) -> layers.Layers:
+    ) -> layers.Layer:
         super(VanillaDecoderLayer, self).__init__(name=name, **kwargs)
 
         self.d_model = d_model

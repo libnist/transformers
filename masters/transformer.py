@@ -5,18 +5,26 @@ import keras
 from ..utils.masks import *
 
 
-# In this module a transformer will be implemented. this transformer only contains the training_step
-# of a transformer, so we can make custom transformers based on this MasterTransformer and just
-# define the architecture and call() function.
-# for the sake of different type of inputs, an unpack_inputs() function will be declared that
-# could be overrode in neccesary cases for further custumizatoins.
-# It also contains the masking tools in it so we don't have to import it for many times.
+# In this module a transformer will be implemented. this transformer only
+# contains the training_step of a transformer, so we can make custom
+# transformers based on this MasterTransformer and just define the architecture
+# and call() function. for the sake of different type of inputs, an
+# unpack_inputs() function will be declared that could be overrode in neccesary
+# cases for further custumizatoins. It also contains the masking tools in it so
+#  we don't have to import it for many times.
 
 
 class Master(keras.Model):
+    """
+    To be inherited by transformers with different approaches and layers.
+    Can be furthur customized by ovreriding the methods below. customize
+    `unpack_inputs` for different type of inputs. 
+    """
 
     def train_step(self, inputs):
-
+        """
+        The things that will happen in each train_step.
+        """
         data = self.unpack_inputs(inputs=inputs, call=False)
 
         with tf.GradientTape() as tape:
@@ -37,7 +45,9 @@ class Master(keras.Model):
         return {m.name: m.result() for m in self.metrics}
 
     def test_step(self, inputs):
-
+        """
+        What will happen in each test step.
+        """
         data = self.unpack_inputs(inputs=inputs, call=False)
 
         # Compute predictions
@@ -92,7 +102,10 @@ class Master(keras.Model):
         return padding_mask, look_ahead_mask
 
     def checkpoint(self, ckpt_path):
-
+        """
+        creates checkpoint and checkpoint manager to save or load models.
+        if the checkpoint exists the last state will be restored.
+        """
         if not self.optimizer:
             raise ValueError("Optimizer is not compiled.")
 
@@ -108,6 +121,10 @@ class Master(keras.Model):
             print("Latest checkpoint restored!")
 
     def save(self, epoch=None):
+        """
+        if a checkpoint manager exists the model will be saved, otherwise 
+        call the `checkpoint` method first.
+        """
         if not self.ckpt_manager:
             raise ValueError("ckpt_manager is not defined")
         self.ckpt_manager.save()
