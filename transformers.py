@@ -5,8 +5,16 @@ from .masters.transformer import Master
 
 
 # Vanilla transformer arcitecture for summarizatoin
-class VanillaTransformer(Master):
-
+class AIAYNTransformer(Master):
+    """
+    The overall architecture of this transformer will be the same as the one
+    introduced in Attention is all you need paper, meaning that there nothing
+    extra or less in the encoder or decoder layesr. althogh attention
+    mechanisms are the same as their encoder layers so they can be different, 
+    for example an encoder with fnet attention could be built with this 
+    transformer as long as it follows the same input output structure of the
+    transformer propsed in AIAYN paper.
+    """
     def __init__(self, *, encoder, decoder, output_size):
         super().__init__()
         
