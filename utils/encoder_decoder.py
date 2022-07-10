@@ -1,7 +1,7 @@
 # Import Libraries
 from keras import layers
 
-from .attention import FnetAttention
+from .attention import FnetAttention, InverseFnetAttention
 from .feedforward import PFFN
 
 # __all__ defines what can be accessed from outside
@@ -193,5 +193,48 @@ class VanillaDecoderLayer(layers.Layer):
         config.update({"d_model": self.d_model,
                        "num_heads": self.num_heads,
                        "dense_dim": self.dense_dim,
+                       "rate": self.rate})
+        return config
+
+
+class InverseFnetEncoderLayer(layers.Layer):
+    """
+    Inverse of an FnetEncoderLayer.
+    """
+
+    def __init__(
+        self, *, d_model: int, dense_dim: int, with_dense: bool = True,
+        rate: float = .1, name: str = "InverseFnetEncoderLayer"
+    ) -> layers.Layer:
+        super(InverseFnetEncoderLayer, self).__init__(name=name)
+
+        self.d_model = d_model
+        self.dense_dim = dense_dim
+        self.with_dense = with_dense
+        self.rate = rate
+
+        self.pffn = PFFN(d_model=d_model, dense_dim=dense_dim, rate=rate)
+
+        self.inverse_fnet_attention = InverseFnetAttention(
+            with_dense=with_dense,
+            d_model=d_model,
+            rate=rate
+        )
+
+    def call(self, inputs, training: bool = False, **kwargs):
+        """
+        inputs are in shape (batch_size, seq_len, d_model)
+        """
+
+        outputs = self.pffn(inputs, training=training)
+        outputs = self.inverse_fnet_attention(inputs, training=training)
+
+        return outputs
+
+    def get_config(self):
+        config = super(InverseFnetEncoderLayer, self).get_config()
+        config.update({"d_model": self.d_model,
+                       "dense_dim": self.dense_dim,
+                       "with_dense": self.with_dense,
                        "rate": self.rate})
         return config

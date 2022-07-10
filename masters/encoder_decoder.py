@@ -49,6 +49,7 @@ class Encoder(Master):
     `number_of_layers` encoder layers. the output of the last encoder layer
     will be returned as the output.
     """
+
     def call(self, inputs, training: bool = False, padding_mask=None):
         # Expected input is just the expected input for embedding
         # inputs shape: (batch_size, seq_len)
@@ -64,6 +65,18 @@ class Encoder(Master):
         return output
 
 
+class InverseEncoder(Master):
+
+    def call(self, inputs, training: bool = False, padding_mask=None):
+        outputs = inputs
+
+        for encoder in self.layers:
+            outputs = encoder(inputs=outputs,
+                              training=training,
+                              padding_mask=padding_mask)
+        return outputs
+
+
 class Decoder(Master):
     """
     A high level Decoder that given a decoder layer and its embedding layer
@@ -71,6 +84,7 @@ class Decoder(Master):
     `number_of_layers` encoder layers. the output of the last decoder layer
     will be returned as the output.
     """
+
     def call(self, inputs, enc_outputs, training: bool = False,
              padding_mask=None, look_ahead_mask=None):
         # inputs shape: (batch_size, seq_len)
