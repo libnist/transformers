@@ -204,9 +204,9 @@ class InverseFnetEncoderLayer(layers.Layer):
 
     def __init__(
         self, *, d_model: int, dense_dim: int, with_dense: bool = True,
-        rate: float = .1, name: str = "InverseFnetEncoderLayer"
+        rate: float = .1, name: str = "InverseFnetEncoderLayer", **kwargs
     ) -> layers.Layer:
-        super(InverseFnetEncoderLayer, self).__init__(name=name)
+        super(InverseFnetEncoderLayer, self).__init__(name=name, **kwargs)
 
         self.d_model = d_model
         self.dense_dim = dense_dim
