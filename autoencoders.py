@@ -17,7 +17,8 @@ class FnetAutoEncoder(keras.Model):
     def __init__(
         self, *, d_model: int, number_of_layers: int, sequence_len: int,
         vocab_size: int, type_size: int, dense_layers: list, latent_dim: int,
-        dense_dim: int = 1024, with_dense: bool = False, rate: float = .1,
+        maxlen_pad: int = 1024, dense_dim: int = 1024,
+        with_dense: bool = False, rate: float = .1,
         name: str = "FnetAutoEncoder"
     ) -> keras.Model:
         super(FnetAutoEncoder, self).__init__(name=name)
@@ -29,6 +30,7 @@ class FnetAutoEncoder(keras.Model):
         self.type_size = type_size
         self.dense_layers = dense_layers
         self.latent_dim = latent_dim
+        self.maxlen_pad = maxlen_pad
         self.dense_dim = dense_dim
         self.with_dense = with_dense
         self.rate = rate
@@ -50,11 +52,24 @@ class FnetAutoEncoder(keras.Model):
                                embedding_layer=embedding,
                                name="FnetEncoder")
 
-        # AutoEncoder
-        encoder_outputs = keras.Input(shape=(None, d_model),
+        # ML
+        encoder_outputs = keras.Input(shape=(maxlen_pad, d_model),
                                       dtype=tf.float64)
-        x = layers.Dense(units=d_model, activation="relu")(encoder_outputs)
+        outputs = layers.Dense(
+            units=vocab_size, activation="softmax"
+        )(encoder_outputs)
+        self.ml_model = keras.Model(inputs=encoder_outputs,
+                                    outputs=outputs,
+                                    name="Masked Language Model")
+
+        # AutoEncoder
+        encoder_outputs = keras.Input(shape=(maxlen_pad, d_model),
+                                      dtype=tf.float64)
+
+        x = layers.Permute((2, 1))(encoder_outputs)
+        x = layers.Dense(units=maxlen_pad, activation="relu")(x)
         x = layers.Dropout(rate=rate)(x)
+
         for units in dense_layers:
             x = layers.Dense(units=units, activation="relu")(x)
             x = layers.Dropout(rate=rate)(x)
@@ -62,13 +77,18 @@ class FnetAutoEncoder(keras.Model):
         z_mean = layers.Dense(units=latent_dim, name="z_mean")(x)
         z_var = layers.Dense(units=latent_dim, name="z_var")(x)
         z = Sampling()([z_mean, z_var])
+        z = layers.Permute((2, 1))(z)
+
+        x = layers.Permute((2, 1))(z)
 
         for units in dense_layers[::-1]:
             x = layers.Dense(units=units, activation="relu")(x)
             x = layers.Dropout(rate=rate)(x)
-        x = layers.Dense(units=d_model, activation="relu")(x)
-        outputs = layers.Dropout(rate=rate)(x)
-        
+
+        x = layers.Dense(units=maxlen_pad, activation="relu")(x)
+        x = layers.Dropout(rate=rate)(x)
+        outputs = layers.Permute((2, 1))(x)
+
         self.vae = keras.Model(inputs=encoder_outputs,
                                outputs={"latent": z,
                                         "output": outputs},
@@ -86,10 +106,23 @@ class FnetAutoEncoder(keras.Model):
                                           name="InverseFnetEncoder")
 
     def call(self, inputs, training: bool = False, **kwargs):
+        tokens, types = inputs
+        tokens = keras.utils.pad_sequences(
+            tokens, padding="post",
+            truncating="post", maxlen=self.maxlen_pad
+        )
+        types = keras.utils.pad_sequences(
+            types, value=tf.reduce_max(types),
+            padding="post", truncating="post", maxlen=self.maxlen_pad
+        )
+        inputs = (tokens, types)
         outputs = self.encoder(inputs, training=training)
         vae_dict = self.vae(outputs, training=training)
         outputs = self.inv_encoder(vae_dict["output"], training=training)
         return outputs, vae_dict["latent"]
+
+    def train_step(self, inputs):
+        pass
 
     def get_config(self):
         pass
