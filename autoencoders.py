@@ -53,20 +53,18 @@ class FnetAutoEncoder(keras.Model):
                                name="FnetEncoder")
 
         # ML
-        encoder_outputs = keras.Input(shape=(maxlen_pad, d_model),
-                                      dtype=tf.float64)
-        outputs = layers.Dense(
-            units=vocab_size, activation="softmax"
-        )(encoder_outputs)
-        self.ml_model = keras.Model(inputs=encoder_outputs,
+        inputs = keras.Input(shape=(maxlen_pad, d_model),
+                             dtype=tf.int64)
+        outputs = layers.Dense(units=vocab_size)(inputs)
+        self.ml_model = keras.Model(inputs=inputs,
                                     outputs=outputs,
-                                    name="Masked Language Model")
+                                    name="MaskedLanguageModel")
 
-        # AutoEncoder
-        encoder_outputs = keras.Input(shape=(maxlen_pad, d_model),
-                                      dtype=tf.float64)
+        # VAutoEncoder
+        vae_inputs = keras.Input(shape=(maxlen_pad, d_model),
+                                 dtype=tf.float64)
 
-        x = layers.Permute((2, 1))(encoder_outputs)
+        x = layers.Permute((2, 1))(vae_inputs)
         x = layers.Dense(units=maxlen_pad, activation="relu")(x)
         x = layers.Dropout(rate=rate)(x)
 
@@ -89,8 +87,10 @@ class FnetAutoEncoder(keras.Model):
         x = layers.Dropout(rate=rate)(x)
         outputs = layers.Permute((2, 1))(x)
 
-        self.vae = keras.Model(inputs=encoder_outputs,
+        self.vae = keras.Model(inputs=vae_inputs,
                                outputs={"latent": z,
+                                        "z_mean": z_mean,
+                                        "z_var": z_var,
                                         "output": outputs},
                                name="VAE")
 
@@ -105,24 +105,68 @@ class FnetAutoEncoder(keras.Model):
                                           embedding_layer=None,
                                           name="InverseFnetEncoder")
 
-    def call(self, inputs, training: bool = False, **kwargs):
-        tokens, types = inputs
-        tokens = keras.utils.pad_sequences(
-            tokens, padding="post",
-            truncating="post", maxlen=self.maxlen_pad
+    def call(self, inputs, training: bool = False, ** kwargs):
+        enc_outputs, embeddings = self.encoder(inputs,
+                                               training=training,
+                                               with_embeddings=True)
+
+        vae_dict = self.vae(enc_outputs, training=training)
+        inv_enc_outputs = self.inv_encoder(
+            vae_dict["output"],
+            training=training
         )
-        types = keras.utils.pad_sequences(
-            types, value=tf.reduce_max(types),
-            padding="post", truncating="post", maxlen=self.maxlen_pad
-        )
-        inputs = (tokens, types)
-        outputs = self.encoder(inputs, training=training)
-        vae_dict = self.vae(outputs, training=training)
-        outputs = self.inv_encoder(vae_dict["output"], training=training)
-        return outputs, vae_dict["latent"]
+        kl_loss = (-0.5 * (1 + vae_dict["z_var"]
+                          - tf.square(vae_dict["z_mean"]) -
+                          tf.exp(vae_dict["z_var"])))
+        self.add_loss(tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1)))
+        return {"embeddings": embeddings,
+                "outputs": inv_enc_outputs,
+                "latent": vae_dict["latent"],
+                "enc_outputs": enc_outputs}
+
+    def compile(self, ml_optimizer, ae_optimizer,
+                ml_loss, **kwargs):
+        super(FnetAutoEncoder, self).compile(**kwargs)
+        self.ml_optimizer = ml_optimizer
+        self.ae_optimizer = ae_optimizer
+        self.ml_loss = ml_loss
 
     def train_step(self, inputs):
-        pass
+        tokens, types = inputs
+        tf.print("token_shape", tf.shape(tokens))
+
+        # Get the trainable variable of each part
+        ml_vars = (self.encoder.trainable_variables +
+                   self.ml_model.trainable_variables)
+        vae_vars = (self.encoder.trainable_variables +
+                    self.vae.trainable_variables +
+                    self.inv_encoder.trainable_variables)
+
+        # Train ml_model
+        with tf.GradientTape() as tape:
+            latent = self(inputs, training=True)["enc_outputs"]
+            predictions = self.ml_model(latent, training=True)
+            tf.print("preds_shape", tf.shape(predictions))
+            ml_loss = self.ml_loss(y_true=tokens,
+                                   y_pred=predictions)
+
+        grads = tape.gradient(ml_loss, ml_vars)
+        self.ml_optimizer.apply_gradients(zip(grads, ml_vars))
+
+        # Train vae
+        with tf.GradientTape() as tape:
+            vae_back = self(inputs, training=True)
+            embeddings = vae_back["embeddings"]
+            outputs = vae_back["outputs"]
+            ae_loss = self.compiled_loss(y_true=embeddings,
+                                         y_pred=outputs)
+            ae_loss += self.losses
+
+        grads = tape.gradient(ae_loss, vae_vars)
+        self.ae_optimizer.apply_gradients(zip(grads, vae_vars))
+
+        return {"MLM_Loss": ml_loss,
+                "VAE_Loss": ae_loss}
 
     def get_config(self):
         pass

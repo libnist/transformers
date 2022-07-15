@@ -50,19 +50,23 @@ class Encoder(Master):
     will be returned as the output.
     """
 
-    def call(self, inputs, training: bool = False, padding_mask=None):
+    def call(self, inputs, training: bool = False,
+             with_embeddings: bool = False, padding_mask=None):
         # Expected input is just the expected input for embedding
         # inputs shape: (batch_size, seq_len)
         # (batch_size, seq_len, d_model=d_embedding)
         output = self.embedding_layer(inputs=inputs, training=training)
+        embeddings = output
 
         for encoder in self.layers:
             # (batch_size, seq_len, d_model=d_encoder_layer)
             output = encoder(inputs=output,
                              training=training,
                              padding_mask=padding_mask)
-
-        return output
+        if with_embeddings:
+            return output, embeddings
+        else:
+            return output
 
 
 class InverseEncoder(Master):

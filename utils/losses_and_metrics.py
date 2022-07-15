@@ -19,9 +19,9 @@ class SCCELoss(keras.losses.Loss):
             reduction="none"
         )
 
-    def call(self, y_ture, y_pred):
-        mask = tf.math.logical_not(tf.math.equal(y_ture, 0))
-        loss_ = self.scce(y_ture, y_pred)
+    def call(self, y_true, y_pred):
+        mask = tf.math.logical_not(tf.math.equal(y_true, 0))
+        loss_ = self.scce(y_true, y_pred)
 
         mask = tf.cast(mask, dtype=loss_.dtype)
         loss_ *= mask
