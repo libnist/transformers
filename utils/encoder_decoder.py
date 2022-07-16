@@ -227,7 +227,7 @@ class InverseFnetEncoderLayer(layers.Layer):
         """
 
         outputs = self.pffn(inputs, training=training)
-        outputs = self.inverse_fnet_attention(inputs, training=training)
+        outputs = self.inverse_fnet_attention(outputs, training=training)
 
         return outputs
 

@@ -104,7 +104,7 @@ class InverseFnetAttention(layers.Layer):
         return outputs
 
     def get_config(self):
-        config = super(FnetAttention, self).get_config()
+        config = super(InverseFnetAttention, self).get_config()
         config.update({"with_dense": self.with_dense,
                        "d_model": self.d_model,
                        "rate": self.rate})
