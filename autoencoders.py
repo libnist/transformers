@@ -157,7 +157,6 @@ class FnetAutoEncoder(keras.Model):
         outputs = self.inv_encoder(outputs, training=True)
         return outputs, embeddings, self.kl_loss(z_mean, z_var)
 
-    @tf.function
     def train_step(self, inputs):
         tokens, _ = inputs
 
@@ -207,6 +206,11 @@ class FnetAutoEncoder(keras.Model):
                        "with_dense": self.with_dense,
                        "rate": self.rate})
         return config
+
+    @property
+    def metrics(self):
+        return [self.mlm_loss_metric,
+                self.vae_loss_metric]
 
 
 class Sampling(layers.Layer):
