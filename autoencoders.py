@@ -3,8 +3,8 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-from .utils.embedding import EmbeddingLayer
-from .utils.encoder_decoder import FnetEncoderLayer, InverseFnetEncoderLayer
+from .components.embeddings import EmbeddingLayer
+from .components.encoder_decoder_layers import FnetEncoderLayer, InverseFnetEncoderLayer
 from .masters.encoder_decoder import Encoder, InverseEncoder
 
 

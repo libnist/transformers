@@ -28,5 +28,6 @@ def create_look_ahead_mask(size):
     """
     n = (size * (size+1) // 2)
     mask = tfp.math.fill_triangular(
-        tf.ones((n,), dtype=tf.float32), upper=False)
+        tf.ones((n,), dtype=tf.float32), upper=False
+    )
     return mask

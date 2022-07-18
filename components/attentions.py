@@ -3,7 +3,8 @@ import tensorflow as tf
 from keras import layers
 
 # __all__ defines what can be accessed from outside
-__all__ = ["FnetAttention"]
+__all__ = ["FnetAttention",
+           "InverseFnetAttention"]
 
 
 class FnetAttention(layers.Layer):
@@ -34,7 +35,7 @@ class FnetAttention(layers.Layer):
 
         self.layernorm = layers.LayerNormalization()
 
-    def call(self, inputs, training: bool = True):
+    def call(self, inputs, training: bool = False):
         """
         inputs: an already embedded tensor of inputs in the sahpe:
         (batch_size, seq_len, embedding_dim)
@@ -43,10 +44,10 @@ class FnetAttention(layers.Layer):
         outputs = tf.math.real(tf.signal.fft2d(outputs))
 
         if self.with_dense:
-            outputs = self.dense(outputs)
+            outputs = self.dense(outputs, training=training)
             outputs = self.dropout(outputs, training=training)
 
-        outputs = self.layernorm(inputs + outputs)
+        outputs = self.layernorm(inputs + outputs, training=training)
 
         return outputs
 
@@ -86,20 +87,20 @@ class InverseFnetAttention(layers.Layer):
 
         self.layernorm = layers.LayerNormalization()
 
-    def call(self, inputs, training: bool = True):
+    def call(self, inputs, training: bool = False):
         """
         inputs: an already embedded tensor of inputs in the sahpe:
         (batch_size, seq_len, embedding_dim)
         """
-        
+
         outputs = tf.cast(inputs, dtype=tf.complex64)
         outputs = tf.math.real(tf.signal.ifft2d(outputs))
 
         if self.with_dense:
-            outputs = self.dense(outputs)
+            outputs = self.dense(outputs, training=training)
             outputs = self.dropout(outputs, training=training)
 
-        outputs = self.layernorm(inputs + outputs)
+        outputs = self.layernorm(inputs + outputs, training=training)
 
         return outputs
 

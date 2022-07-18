@@ -1,8 +1,8 @@
 # Import Libraries
 from keras import layers
 
-from .attention import FnetAttention, InverseFnetAttention
-from .feedforward import PFFN
+from .attentions import FnetAttention, InverseFnetAttention
+from .feedforwards import FFNN
 
 # __all__ defines what can be accessed from outside
 __all__ = ["VanillaEncoderLayer",
@@ -13,10 +13,10 @@ __all__ = ["VanillaEncoderLayer",
 class VanillaEncoderLayer(layers.Layer):
     """
     A single layer encoder w/ MHA.
-    d_model: used to define d_model of nested layers like MHA and PFFN and the 
+    d_model: used to define d_model of nested layers like MHA and FFNN and the 
     overal output shape.
     numn_heads: number of heads in MHA layer.
-    dense_dim: passed to PFFN.
+    dense_dim: passed to FFNN.
     rate: each of nested layers have Dropout layers, rate defines the droput
     rate for those [0, 1].
     name: name of the layer.
@@ -36,7 +36,7 @@ class VanillaEncoderLayer(layers.Layer):
         self.mha = layers.MultiHeadAttention(num_heads=num_heads,
                                              key_dim=d_model,
                                              dropout=rate)
-        self.pffn = PFFN(d_model=d_model,
+        self.pffn = FFNN(d_model=d_model,
                          dense_dim=dense_dim,
                          rate=rate)
 
@@ -88,7 +88,7 @@ class FnetEncoderLayer(layers.Layer):
             d_model=d_model,
             rate=rate
         )
-        self.pffn = PFFN(
+        self.pffn = FFNN(
             d_model=d_model,
             dense_dim=dense_dim,
             rate=rate
@@ -146,7 +146,7 @@ class VanillaDecoderLayer(layers.Layer):
             key_dim=d_model,
             dropout=rate
         )
-        self.pffn = PFFN(
+        self.pffn = FFNN(
             d_model=d_model,
             dense_dim=dense_dim,
             rate=rate
@@ -173,7 +173,8 @@ class VanillaDecoderLayer(layers.Layer):
             attention_mask=look_ahead_mask,
             training=training
         )
-        outputs_mha1 = self.layernorm1(inputs + outputs_mha1)
+        outputs_mha1 = self.layernorm1(inputs + outputs_mha1,
+                                       training=training)
 
         outputs_mha2 = self.mha2(
             query=outputs_mha1,
@@ -182,7 +183,8 @@ class VanillaDecoderLayer(layers.Layer):
             attention_mask=padding_mask,
             training=training
         )
-        outputs_mha2 = self.layernorm2(outputs_mha1 + outputs_mha2)
+        outputs_mha2 = self.layernorm2(outputs_mha1 + outputs_mha2,
+                                       training=training)
 
         outputs = self.pffn(inputs=outputs_mha2, training=training)
 
@@ -213,7 +215,7 @@ class InverseFnetEncoderLayer(layers.Layer):
         self.with_dense = with_dense
         self.rate = rate
 
-        self.pffn = PFFN(d_model=d_model, dense_dim=dense_dim, rate=rate)
+        self.pffn = FFNN(d_model=d_model, dense_dim=dense_dim, rate=rate)
 
         self.inverse_fnet_attention = InverseFnetAttention(
             with_dense=with_dense,

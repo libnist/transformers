@@ -2,21 +2,21 @@
 from keras import layers
 
 # __all__ defines the thing that can be accessed from outside
-__all__ = ["PFFN"]
+__all__ = ["FFNN"]
 
 
-class PFFN(layers.Layer):
+class FFNN(layers.Layer):
     """
-    PFFN is a feed forward neural network with one dense layer in `dense_dim`
+    FFNN is a feed forward neural network with one dense layer in `dense_dim`
     dimensions, and another with `d_model` dimensions. `rate` is used for the
     dropout layer after the second Dense layer.
     """
 
     def __init__(
         self, *, d_model: int, dense_dim: int,
-        rate: float = .1, name: str = "PFFN", **kwargs
+        rate: float = .1, name: str = "FFNN", **kwargs
     ) -> layers.Layer:
-        super(PFFN, self).__init__(name=name, **kwargs)
+        super(FFNN, self).__init__(name=name, **kwargs)
 
         self.d_model = d_model
         self.dense_dim = dense_dim
@@ -27,20 +27,20 @@ class PFFN(layers.Layer):
         self.dropout = layers.Dropout(rate=rate)
         self.layernorm = layers.LayerNormalization()
 
-    def call(self, inputs, training: bool = True):
+    def call(self, inputs, training: bool = False):
         """
         inputs have to be already embedded and in shape:
         (batch_size, seq_len, d_model)
         """
-        outputs = self.dense_1(inputs)  # (batch_size, seq_len, dense_dim)
-        outputs = self.dense_2(outputs)  # (batch_size, seq_len, d_model)
+        outputs = self.dense_1(inputs, training=training)  # (batch_size, seq_len, dense_dim)
+        outputs = self.dense_2(outputs, training=training)  # (batch_size, seq_len, d_model)
         outputs = self.dropout(outputs, training=training)
-        outputs = self.layernorm(inputs + outputs)
+        outputs = self.layernorm(inputs + outputs, training=training)
 
         return outputs
 
     def get_config(self):
-        config = super(PFFN, self).get_config()
+        config = super(FFNN, self).get_config()
         config.update({"d_model": self.d_model,
                        "dense_dim": self.dense_dim,
                        "rate": self.rate})

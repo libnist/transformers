@@ -58,7 +58,7 @@ class EmbeddingLayer(layers.Layer):
             name="EmbedingDropout"
         )
 
-    def call(self, inputs, training: bool = True):
+    def call(self, inputs, training: bool = False):
         """
         inputs are in shape (batch_size, seq_len)
         the output will be in shape (batch_size, seq_len, embedding_dim=d_model)
@@ -69,11 +69,9 @@ class EmbeddingLayer(layers.Layer):
 
         positions = tf.range(start=0, limit=length, delta=1)
 
-        outputs = self.positional_embeddings(
-            positions
-        )  # (batch_size, seq_len, d_model)
-        outputs += self.token_embeddings(tokens)
-        outputs += self.type_embeddings(types)
+        outputs = self.positional_embeddings(positions, training=training)
+        outputs += self.token_embeddings(tokens, training=training)
+        outputs += self.type_embeddings(types, training=training)
 
         outputs = self.dropout(outputs, training=training)
 
