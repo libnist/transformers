@@ -1,6 +1,7 @@
 from .attentions import *
 from .embeddings import *
 from .encoder_decoder_layers import *
+from .encoder_decoder import *
 from .feedforwards import *
 from .masks import *
 from .losses_and_metrics import *
