@@ -100,6 +100,8 @@ class FnetAutoEncoder(keras.Model):
         )
         # Masked Language Model-end
 
+        self.ln = layers.Normalization()
+
         # self.build(None)
 
     def build(self, input_shape):
@@ -119,7 +121,8 @@ class FnetAutoEncoder(keras.Model):
             self.add_loss(tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1)))
         vae_outputs = self.vae_decoder(vae_outputs_dict["latent"],
                                        training=training)
-        inv_encoder_outputs = self.inv_encoder(vae_outputs, training=training)
+        normalized = self.ln(encoder_outputs + vae_outputs, training=training)
+        inv_encoder_outputs = self.inv_encoder(normalized, training=training)
         mlm_outputs = self.mlm_model(inv_encoder_outputs, training=training)
         return mlm_outputs
 
