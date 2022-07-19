@@ -2,7 +2,7 @@
 import tensorflow as tf
 import keras
 
-from ..utils.masks import *
+from ..components.masks import *
 
 
 # In this module a transformer will be implemented. this transformer only

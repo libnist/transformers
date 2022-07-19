@@ -132,7 +132,7 @@ class FnetEncoder(layers.Layer):
         self.type_size = type_size
         self.dense_dim = dense_dim
         self.with_dense = with_dense
-        self.rete = rate
+        self.rate = rate
 
         self.embedding = EmbeddingLayer(sequence_length=sequence_length,
                                         vocab_size=vocab_size,
@@ -178,13 +178,13 @@ class InverseFnetEncoder(layers.Layer):
         with_dense: bool = False, rate: float = .1,
         name: str = "FnetEncoder", **kwargs
     ):
-        super(FnetEncoder, self).__init__(name=name, **kwargs)
+        super(InverseFnetEncoder, self).__init__(name=name, **kwargs)
 
         self.num_layers = num_layers
         self.d_model = d_model
         self.dense_dim = dense_dim
         self.with_dense = with_dense
-        self.rete = rate
+        self.rate = rate
 
         self.layers = [InverseFnetEncoderLayer(d_model=d_model,
                                                dense_dim=dense_dim,
@@ -202,7 +202,7 @@ class InverseFnetEncoder(layers.Layer):
         return outputs
 
     def get_config(self):
-        config = super(FnetEncoder, self).get_config()
+        config = super(InverseFnetEncoder, self).get_config()
         config.update({"num_layers": self.num_layers,
                        "d_model": self.d_model,
                        "dense_dim": self.dense_dim,
