@@ -100,7 +100,7 @@ class FnetAutoEncoder(keras.Model):
         )
         # Masked Language Model-end
 
-        self.ln = layers.Normalization()
+        # self.ln = layers.Normalization()
 
         # self.build(None)
 
@@ -110,8 +110,10 @@ class FnetAutoEncoder(keras.Model):
         enc_out = self.encoder(input)
         inv_enc_out = self.inv_encoder(enc_out)
 
-    def call(self, inputs, training: bool = False, ** kwargs):
-        encoder_outputs = self.encoder(inputs, training=training)
+    def call(self, inputs, training: bool = False, **kwargs):
+        encoder_outputs, embeddings = self.encoder(inputs,
+                                                   with_embeddings=True,
+                                                   training=training)
         vae_outputs_dict = self.vae_encoder(encoder_outputs, training=training)
         # add kl loss
         if training:
@@ -121,31 +123,94 @@ class FnetAutoEncoder(keras.Model):
             self.add_loss(tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1)))
         vae_outputs = self.vae_decoder(vae_outputs_dict["latent"],
                                        training=training)
-        normalized = self.ln(encoder_outputs + vae_outputs, training=training)
-        inv_encoder_outputs = self.inv_encoder(normalized, training=training)
-        mlm_outputs = self.mlm_model(inv_encoder_outputs, training=training)
+        inv_encoder_outputs = self.inv_encoder(vae_outputs, training=training)
+        return inv_encoder_outputs, embeddings
+
+    def compile(self, mlm_optim=None,
+                vae_optim=None,
+                mlm_loss=None,
+                vae_loss=None,
+                mlm_accuracy=None,
+                **kwargs):  # Have to put proper default values
+        super(FnetAutoEncoder, self).compile(**kwargs)
+
+        self.mlm_optim = mlm_optim
+        self.vae_optim = vae_optim
+        self.mlm_loss = mlm_loss
+        self.vae_loss = vae_loss
+
+        self.mlm_accuracy = mlm_accuracy
+
+        self.mlm_loss_metric = keras.metrics.Mean(name="MLM_Loss")
+        self.vae_loss_metric = keras.metrics.Mean(name="VAE_Loss")
+
+    def mlm_step(self, inputs, training=True):
+        encoder_outputs = self.encoder(inputs, training=True)
+        mlm_outputs = self.mlm_model(encoder_outputs, training=True)
         return mlm_outputs
 
     def train_step(self, inputs):
+        inputs, labels = inputs
 
-        # This is not for masked modeling i will change this later
-
+        # Masked Language step
         with tf.GradientTape() as tape:
-            prediction = self(inputs, training=True)
-            loss = self.compiled_loss(y_true=inputs[0],
-                                      y_pred=prediction,
-                                      regularization_losses=self.losses)
+            mlm_predictions = self.mlm_step(inputs)
+            mlm_loss = self.mlm_loss(y_true=labels,
+                                     y_pred=mlm_predictions)
 
-        vars = self.trainable_variables
-        grads = tape.gradient(loss, vars)
+        mlm_vars = (self.encoder.trainable_variables +
+                    self.mlm_model.trainable_variables)
+        grads = tape.gradient(mlm_loss, mlm_vars)
+        self.mlm_optim.apply_gradients(zip(grads, mlm_vars))
 
-        self.optimizer.apply_gradients(zip(grads, vars))
+        # VAE step
+        with tf.GradientTape() as tape:
+            predictions, embeddings = self((labels, inputs[1]), training=True)
+            vae_loss = self.vae_loss(y_true=embeddings,
+                                     y_pred=predictions)
+            vae_loss += self.losses
 
-        self.compiled_metrics.update_state(y_true=inputs[0],
-                                           y_pred=prediction,)
+        vae_vars = (self.encoder.trainable_variables +
+                    self.vae_encoder.trainable_variables +
+                    self.vae_decoder.trainable_variables +
+                    self.inv_encoder.trainable_variables)
+        grads = tape.gradient(vae_loss, vae_vars)
+        self.vae_optim.apply_gradients(zip(grads, vae_vars))
 
-        return {metric.name: metric.result()
-                for metric in self.metrics}
+        self.mlm_loss_metric.update_state(mlm_loss)
+        self.vae_loss_metric.update_state(vae_loss)
+
+        self.mlm_accuracy.update_state(y_true=labels,
+                                       y_pred=mlm_predictions)
+
+        return {metric.name: metric.result() for metric in self.metrics}
+
+    @property
+    def metrics(self):
+        return [self.mlm_loss_metric,
+                self.mlm_accuracy,
+                self.vae_loss_metric]
+
+    def test_step(self, inputs):
+        inputs, labels = inputs
+
+        # Test MLM
+        mlm_predictions = self.mlm_step(inputs, training=False)
+        mlm_loss = self.mlm_loss(y_true=labels,
+                                 y_pred=mlm_predictions)
+
+        # Test VAE
+        predictions, embeddings = self((labels, inputs[1]), training=False)
+        vae_loss = self.vae_loss(y_true=embeddings,
+                                 y_pred=predictions)
+
+        self.mlm_loss_metric.update_state(mlm_loss)
+        self.vae_loss_metric.update_state(vae_loss)
+
+        self.mlm_accuracy.update_state(y_true=labels,
+                                       y_pred=mlm_predictions)
+
+        return {metric.name: metric.result() for metric in self.metrics}
 
     def get_config(self):
         config = super(FnetAutoEncoder, self).get_config()

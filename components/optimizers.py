@@ -14,7 +14,6 @@ class AIAYNSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     ) -> tf.keras.optimizers.schedules.LearningRateSchedule:
         super(AIAYNSchedule, self).__init__()
 
-        self.d_model_to_serialize = d_model
         self.d_model = d_model
         self.d_model = tf.cast(self.d_model, tf.float32)
 
@@ -27,7 +26,7 @@ class AIAYNSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
     def get_config(self):
-        config = {"d_model": self.d_model_to_serialize,
+        config = {"d_model": int(self.d_model.numpy()),
                   "warmup_steps": self.warmup_steps}
         return config
 

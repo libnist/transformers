@@ -176,7 +176,7 @@ class InverseFnetEncoder(layers.Layer):
     def __init__(
         self, *, num_layers: int, d_model: int, dense_dim: int = 1024,
         with_dense: bool = False, rate: float = .1,
-        name: str = "FnetEncoder", **kwargs
+        name: str = "InverseFnetEncoder", **kwargs
     ):
         super(InverseFnetEncoder, self).__init__(name=name, **kwargs)
 
