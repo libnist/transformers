@@ -142,9 +142,25 @@ class Summ(keras.Model):
 
         return {metric.name: metric.result() for metric in self.metrics}
 
-
     def test_step(self, inputs):
-        pass
+        
+        inp, tar = inputs
+
+        tar_token, tar_type = tar
+
+        inp_tar = tar_token[:, :-1], tar_type[:, :-1]
+
+        y_true = tar_token[:, 1:]
+
+        predictions = self((inp, inp_tar), training=True)
+        self.compiled_loss(y_true=y_true,
+                           y_pred=predictions,
+                           regularization_losses=self.losses)
+
+        self.compiled_metrics.update_state(y_true=y_true,
+                                           y_pred=predictions)
+
+        return {metric.name: metric.result() for metric in self.metrics}
 
     def get_config(self):
         config = super(Summ, self).get_config()
