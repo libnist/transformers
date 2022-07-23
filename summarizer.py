@@ -20,9 +20,9 @@ class Summ(keras.Model):
         decoder_vocab_size: int, decoder_type_size: int,
         dense_layers: list, latent_dim: int, dense_dim: int = 1024,
         with_dense: bool = False, rate: float = .1, num_heads: int = 8,
-        name: str = "FnetAutoEncoder"
+        name: str = "ShortSumm", **kwargs
     ) -> keras.Model:
-        super(Summ, self).__init__(name=name)
+        super(Summ, self).__init__(name=name, **kwargs)
 
         self.d_model = d_model
         self.number_of_layers = number_of_layers

@@ -12,7 +12,7 @@ class SCCELoss(keras.losses.Loss):
     This is a custom SparceCategoricalCrossentropy loss.
     """
 
-    def __init__(self, name: str = "SCCE") -> keras.losses.Loss:
+    def __init__(self, name: str = "SCCE", **kwargs) -> keras.losses.Loss:
         super(SCCELoss, self).__init__(name=name)
         self.scce = keras.losses.SparseCategoricalCrossentropy(
             from_logits=True,
