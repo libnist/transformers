@@ -34,10 +34,10 @@ class Accuracy(keras.metrics.Metric):
     """
     This is a custom Accuracy for transformer models.
     """
-    def __init__(self, name: str = "Accuracy") -> keras.metrics.Metric:
-        super(Accuracy, self).__init__(name=name)
-        self.count = tf.Variable(0, dtype=tf.float32)
-        self.acc = tf.Variable(0, dtype=tf.float32)
+    def __init__(self, name: str = "Accuracy", **kwargs) -> keras.metrics.Metric:
+        super(Accuracy, self).__init__(name=name, **kwargs)
+        self.count = tf.Variable(0, dtype=tf.float32, name="count")
+        self.acc = tf.Variable(0, dtype=tf.float32, name="accuracy")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         accuracies = tf.equal(y_true, tf.argmax(y_pred, axis=2))
