@@ -137,7 +137,7 @@ class Summ(keras.Model):
         return {metric.name: metric.result() for metric in self.metrics}
 
     def test_step(self, inputs):
-        
+
         inp, tar = inputs
 
         tar_token, tar_type = tar
@@ -157,22 +157,27 @@ class Summ(keras.Model):
         return {metric.name: metric.result() for metric in self.metrics}
 
     def get_config(self):
-        config = super(Summ, self).get_config()
-        config.update({"d_model": self.d_model,
-                       "number_of_layers": self.number_of_layers,
-                       "encoder_sequence_len": self.encoder_sequence_len,
-                       "encoder_vocab_size": self.encoder_vocab_size,
-                       "encoder_type_size": self.encoder_type_size,
-                       "decoder_sequence_len": self.decoder_sequence_len,
-                       "decoder_vocab_size": self.decoder_vocab_size,
-                       "decoder_type_size": self.decoder_type_size,
-                       "dense_layers": self.dense_layers,
-                       "num_heads": self.num_heads,
-                       "latent_dim": self.latent_dim,
-                       "dense_dim": self.dense_dim,
-                       "with_dense": self.with_dense,
-                       "rate": self.rate})
+        config = {"d_model": self.d_model,
+                  "number_of_layers": self.number_of_layers,
+                  "encoder_sequence_len": self.encoder_sequence_len,
+                  "encoder_vocab_size": self.encoder_vocab_size,
+                  "encoder_type_size": self.encoder_type_size,
+                  "decoder_sequence_len": self.decoder_sequence_len,
+                  "decoder_vocab_size": self.decoder_vocab_size,
+                  "decoder_type_size": self.decoder_type_size,
+                  "dense_layers": self.dense_layers,
+                  "num_heads": self.num_heads,
+                  "latent_dim": self.latent_dim,
+                  "dense_dim": self.dense_dim,
+                  "with_dense": self.with_dense,
+                  "rate": self.rate,
+                  "name": self.name,
+                  "dtype": self.dtype}
         return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
     def create_masks(self, inp, tar):
         """
