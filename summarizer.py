@@ -86,12 +86,6 @@ class Summ(keras.Model):
         # Final Layer
         self.final = layers.Dense(units=decoder_vocab_size)
 
-    # def build(self, input_shape):
-    #     input = tf.zeros(shape=(1, self.sequence_len), dtype=tf.int32)
-    #     input = (input, input)
-    #     enc_out = self.encoder(input)
-    #     inv_enc_out = self.inv_encoder(enc_out)
-
     def call(self, inputs, training: bool = False, **kwargs):
 
         inp, tar = inputs
