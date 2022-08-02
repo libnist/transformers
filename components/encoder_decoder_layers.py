@@ -1,4 +1,5 @@
 # Import Libraries
+import tensorflow as tf
 from keras import layers
 
 from .attentions import FnetAttention, InverseFnetAttention
@@ -33,9 +34,12 @@ class VanillaEncoderLayer(layers.Layer):
         self.dense_dim = dense_dim
         self.rate = rate
 
-        self.mha = layers.MultiHeadAttention(num_heads=num_heads,
-                                             key_dim=d_model,
-                                             dropout=rate)
+        self.mha = layers.MultiHeadAttention(
+            num_heads=num_heads,
+            key_dim=d_model,
+            dropout=rate,
+            kernel_initializer=tf.initializers.glorot_uniform(seed=0)
+        )
         self.pffn = FFNN(d_model=d_model,
                          dense_dim=dense_dim,
                          rate=rate)
@@ -139,12 +143,14 @@ class VanillaDecoderLayer(layers.Layer):
         self.mha1 = layers.MultiHeadAttention(
             num_heads=num_heads,
             key_dim=d_model,
-            dropout=rate
+            dropout=rate,
+            kernel_initializer=tf.initializers.glorot_uniform(seed=0)
         )
         self.mha2 = layers.MultiHeadAttention(
             num_heads=num_heads,
             key_dim=d_model,
-            dropout=rate
+            dropout=rate,
+            kernel_initializer=tf.initializers.glorot_uniform(seed=0)
         )
         self.pffn = FFNN(
             d_model=d_model,
