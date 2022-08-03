@@ -37,12 +37,17 @@ class VanillaEncoderLayer(layers.Layer):
         self.mha = layers.MultiHeadAttention(
             num_heads=num_heads,
             key_dim=d_model,
-            dropout=rate,
-            kernel_initializer=tf.initializers.glorot_uniform(seed=0)
+            dropout=rate
         )
         self.pffn = FFNN(d_model=d_model,
                          dense_dim=dense_dim,
                          rate=rate)
+
+    def build(self, input_shape):
+        query = tf.TensorShape((None, None, self.d_model))
+        key = tf.TensorShape((None, None, self.d_model))
+        value = tf.TensorShape((None, None, self.d_model))
+        self.mha._build_from_signature(query, key, value)
 
     def call(self, inputs, training: bool = False, padding_mask=None):
         """
@@ -143,14 +148,12 @@ class VanillaDecoderLayer(layers.Layer):
         self.mha1 = layers.MultiHeadAttention(
             num_heads=num_heads,
             key_dim=d_model,
-            dropout=rate,
-            kernel_initializer=tf.initializers.glorot_uniform(seed=0)
+            dropout=rate
         )
         self.mha2 = layers.MultiHeadAttention(
             num_heads=num_heads,
             key_dim=d_model,
-            dropout=rate,
-            kernel_initializer=tf.initializers.glorot_uniform(seed=0)
+            dropout=rate
         )
         self.pffn = FFNN(
             d_model=d_model,
@@ -160,6 +163,13 @@ class VanillaDecoderLayer(layers.Layer):
 
         self.layernorm1 = layers.LayerNormalization()
         self.layernorm2 = layers.LayerNormalization()
+
+    def build(self, input_shape):
+        query = tf.TensorShape((None, None, self.d_model))
+        key = tf.TensorShape((None, None, self.d_model))
+        value = tf.TensorShape((None, None, self.d_model))
+        self.mha1._build_from_signature(query, key, value)
+        self.mha2._build_from_signature(query, key, value)
 
     def call(
         self, inputs, enc_outputs, training: bool = False,
