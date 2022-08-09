@@ -172,6 +172,58 @@ class FnetEncoder(layers.Layer):
         return config
 
 
+class FnetEncoderCnn(layers.Layer):
+    def __init__(
+        self, *, num_layers: int, d_model: int, sequence_length: int,
+        vocab_size: int, type_size: int, with_dense: bool = False,
+        rate: float = .1, name: str = "FnetEncoderCnn", **kwargs
+    ):
+        super(FnetEncoderCnn, self).__init__(name=name, **kwargs)
+
+        self.num_layers = num_layers
+        self.d_model = d_model
+        self.sequence_length = sequence_length
+        self.vocab_size = vocab_size
+        self.type_size = type_size
+        self.with_dense = with_dense
+        self.rate = rate
+
+        self.embedding = EmbeddingLayer(sequence_length=sequence_length,
+                                        vocab_size=vocab_size,
+                                        type_size=type_size,
+                                        d_model=d_model,
+                                        rate=rate)
+
+        self.layers = [FnetEncoderLayerCnn(d_model=d_model,
+                                           with_dense=with_dense,
+                                           rate=rate)
+                       for _ in range(num_layers)]
+
+    def call(self, inputs, training: bool = False,
+             with_embeddings: bool = False):
+        outputs = self.embedding(inputs=inputs, training=training)
+        embeddings = outputs
+
+        for encoder in self.layers:
+            outputs = encoder(inputs=outputs,
+                              training=training)
+        if with_embeddings:
+            return outputs, embeddings
+        else:
+            return outputs
+
+    def get_config(self):
+        config = super(FnetEncoderCnn, self).get_config()
+        config.update({"num_layers": self.num_layers,
+                       "d_model": self.d_model,
+                       "sequence_length": self.sequence_length,
+                       "vocab_size": self.vocab_size,
+                       "type_size": self.type_size,
+                       "with_dense": self.with_dense,
+                       "rate": self.rate})
+        return config
+
+
 class InverseFnetEncoder(layers.Layer):
     def __init__(
         self, *, num_layers: int, d_model: int, dense_dim: int = 1024,

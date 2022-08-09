@@ -1,14 +1,16 @@
 # Import Libraries
+from cmath import exp
 import tensorflow as tf
 from keras import layers
 
 from .attentions import FnetAttention, InverseFnetAttention
-from .feedforwards import FFNN
+from .feedforwards import FFNN, CNN
 
 # __all__ defines what can be accessed from outside
 __all__ = ["VanillaEncoderLayer",
            "FnetEncoderLayer",
-           "VanillaDecoderLayer"]
+           "VanillaDecoderLayer",
+           "FnetEncoderLayerCnn"]
 
 
 class VanillaEncoderLayer(layers.Layer):
@@ -121,6 +123,43 @@ class FnetEncoderLayer(layers.Layer):
                        "rate": self.rate})
         return config
 
+class FnetEncoderLayerCnn(layers.Layer):
+    def __init__(
+        self, *, d_model: int, with_dense: bool = False, rate: float = .1,
+        name: str = "FnetEncoderLayerCnn", **kwargs
+    ) -> layers.Layer:
+        super(FnetEncoderLayerCnn, self).__init__(name=name, **kwargs)
+
+        self.d_model = d_model
+        self.with_dense = with_dense
+        self.rate = rate
+
+        self.fnet = FnetAttention(
+            with_dense=with_dense,
+            d_model=d_model,
+            rate=rate
+        )
+        self.pffn = CNN(
+            dim_filters=d_model,
+            rate=rate
+        )
+
+    def call(self, inputs, training: bool = False, **kwargs):
+        """
+        inputs are already embedded tokens in the shape: 
+        (batch_size, seq_len, d_model)
+        """
+        outputs = self.fnet(inputs=inputs, training=training)
+        outputs = self.pffn(inputs=outputs, training=training)
+
+        return outputs
+
+    def get_config(self):
+        config = super(FnetEncoderLayerCnn, self).get_config()
+        config.update({"d_model": self.d_model,
+                       "with_dense": self.with_dense,
+                       "rate": self.rate})
+        return config
 
 class VanillaDecoderLayer(layers.Layer):
     """
